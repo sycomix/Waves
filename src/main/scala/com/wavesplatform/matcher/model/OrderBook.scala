@@ -55,6 +55,11 @@ object OrderBook {
   type SideSnapshot = Map[Price, Seq[LimitOrder]]
 
   case class Snapshot(bids: SideSnapshot, asks: SideSnapshot)
+  object Snapshot {
+    def toByteArray(x: Snapshot): Array[Byte]    = ???
+    def fromByteArray(xs: Array[Byte]): Snapshot = ???
+  }
+
   case class AggregatedSnapshot(bids: Seq[LevelAgg] = Seq.empty, asks: Seq[LevelAgg] = Seq.empty)
 
   implicit class SideExt(val side: Side) extends AnyVal {

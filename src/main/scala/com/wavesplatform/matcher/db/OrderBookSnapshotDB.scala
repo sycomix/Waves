@@ -4,7 +4,7 @@ import cats.instances.option.catsStdInstancesForOption
 import cats.syntax.apply.catsSyntaxTuple2Semigroupal
 import com.wavesplatform.database.{DBExt, Key}
 import com.wavesplatform.matcher.MatcherKeys
-import com.wavesplatform.matcher.market.OrderBookActor.Snapshot
+import com.wavesplatform.matcher.model.OrderBook.Snapshot
 import com.wavesplatform.matcher.queue.QueueEventWithMeta.Offset
 import com.wavesplatform.transaction.assets.exchange.AssetPair
 import org.iq80.leveldb.DB
@@ -24,8 +24,8 @@ object OrderBookSnapshotDB {
 
     override def update(assetPair: AssetPair, offset: Offset, newSnapshot: Option[Snapshot]): Unit = db.readWrite { rw =>
       val (obOffsetKey, obKey) = keys(assetPair)
-      rw.put(obOffsetKey, offset)
-      newSnapshot.foreach(rw.put(obKey, _))
+      rw.put(obOffsetKey, Some(offset))
+      newSnapshot.foreach(x => rw.put(obKey, Some(x)))
     }
 
     override def delete(assetPair: AssetPair): Unit = db.readWrite { rw =>

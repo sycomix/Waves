@@ -1,9 +1,9 @@
 package com.wavesplatform.matcher.market
 
-import akka.actor.Actor
+import akka.actor.{Actor, Props}
 import com.wavesplatform.matcher.db.OrderBookSnapshotDB
-import com.wavesplatform.matcher.market.OrderBookActor.Snapshot
 import com.wavesplatform.matcher.market.OrderBookSnapshotStoreActor._
+import com.wavesplatform.matcher.model.OrderBook.Snapshot
 import com.wavesplatform.matcher.queue.QueueEventWithMeta.Offset
 import com.wavesplatform.transaction.assets.exchange.AssetPair
 
@@ -15,9 +15,7 @@ class OrderBookSnapshotStoreActor(db: OrderBookSnapshotDB) extends Actor {
       db.update(p, offset, newSnapshot)
       sender() ! Response.Updated(offset)
 
-    case Message.Delete(p) =>
-      db.delete(p)
-      sender() ! Response.Deleted(p)
+    case Message.Delete(p) => db.delete(p)
   }
 }
 
@@ -40,4 +38,6 @@ object OrderBookSnapshotStoreActor {
     case class Updated(offset: Offset)                         extends Response
     case class Deleted(assetPair: AssetPair)                   extends Response
   }
+
+  def props(db: OrderBookSnapshotDB): Props = Props(new OrderBookSnapshotStoreActor(db))
 }

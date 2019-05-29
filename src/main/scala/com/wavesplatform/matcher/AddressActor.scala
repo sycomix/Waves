@@ -45,9 +45,9 @@ class AddressActor(
   private val pendingCancellation = MutableMap.empty[ByteStr, Promise[Resp]]
   private val pendingPlacement    = MutableMap.empty[ByteStr, Promise[Resp]]
 
-  private val activeOrders  = MutableMap.empty[Order.Id, LimitOrder]
-  private val openVolume    = MutableMap.empty[Option[AssetId], Long].withDefaultValue(0L)
-  private val expiration    = MutableMap.empty[ByteStr, Cancellable]
+  private val activeOrders = MutableMap.empty[Order.Id, LimitOrder]
+  private val openVolume   = MutableMap.empty[Option[AssetId], Long].withDefaultValue(0L)
+  private val expiration   = MutableMap.empty[ByteStr, Cancellable]
 
   private def reserve(limitOrder: LimitOrder): Unit = {
     activeOrders += limitOrder.order.id() -> limitOrder

@@ -4,9 +4,8 @@ import com.google.common.primitives.{Ints, Longs, Shorts}
 import com.wavesplatform.account.Address
 import com.wavesplatform.common.state.ByteStr
 import com.wavesplatform.database.Key
-import com.wavesplatform.matcher.market.OrderBookActor
-import com.wavesplatform.matcher.model.OrderInfo
 import com.wavesplatform.matcher.model.OrderInfo.FinalOrderInfo
+import com.wavesplatform.matcher.model.{OrderBook, OrderInfo}
 import com.wavesplatform.matcher.queue.{QueueEvent, QueueEventWithMeta}
 import com.wavesplatform.transaction.assets.exchange._
 
@@ -80,6 +79,6 @@ object MatcherKeys {
     Key.opt("matcher-ob-snapshot-offset", bytes(OrderBookSnapshotOffsetPrefix, pair.bytes), Longs.fromByteArray, Longs.toByteArray)
 
   val OrderBookSnapshotPrefix: Short = 25
-  def orderBookSnapshot(pair: AssetPair): Key[Option[OrderBookActor.Snapshot]] =
-    Key.opt("matcher-ob-snapshot", bytes(OrderBookSnapshotPrefix, pair.bytes), Longs.fromByteArray, Longs.toByteArray)
+  def orderBookSnapshot(pair: AssetPair): Key[Option[OrderBook.Snapshot]] =
+    Key.opt("matcher-ob-snapshot", bytes(OrderBookSnapshotPrefix, pair.bytes), OrderBook.Snapshot.fromByteArray, OrderBook.Snapshot.toByteArray)
 }
