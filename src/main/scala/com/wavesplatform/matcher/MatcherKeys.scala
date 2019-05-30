@@ -80,5 +80,5 @@ object MatcherKeys {
 
   val OrderBookSnapshotPrefix: Short = 25
   def orderBookSnapshot(pair: AssetPair): Key[Option[OrderBook.Snapshot]] =
-    Key.opt("matcher-ob-snapshot", bytes(OrderBookSnapshotPrefix, pair.bytes), OrderBook.Snapshot.fromByteArray, OrderBook.Snapshot.toByteArray)
+    Key.opt("matcher-ob-snapshot", bytes(OrderBookSnapshotPrefix, pair.bytes), OrderBook.Snapshot.fromBytes, OrderBook.Snapshot.toBytes)
 }

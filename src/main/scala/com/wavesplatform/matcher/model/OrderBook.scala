@@ -1,6 +1,10 @@
 package com.wavesplatform.matcher.model
 
+import java.nio.ByteBuffer
+
+import com.google.common.primitives.{Ints, Longs}
 import com.wavesplatform.common.state.ByteStr
+import com.wavesplatform.lang.utils.Serialize.ByteBufferOps
 import com.wavesplatform.matcher.model.Events._
 import com.wavesplatform.matcher.model.MatcherModel.Price
 import com.wavesplatform.transaction.assets.exchange.{Order, OrderType}
@@ -50,14 +54,70 @@ class OrderBook private (private[OrderBook] val bids: OrderBook.Side, private[Or
 }
 
 object OrderBook {
-  type Level        = Vector[LimitOrder]
-  type Side         = mutable.TreeMap[Price, Level]
+  type Level = Vector[LimitOrder]
+  type Side  = mutable.TreeMap[Price, Level]
+
   type SideSnapshot = Map[Price, Seq[LimitOrder]]
+  object SideSnapshot {
+    def toBytes(snapshot: SideSnapshot): Array[Byte] = {
+      val r = new mutable.ArrayBuilder.ofByte
+      r ++= Ints.toByteArray(snapshot.size)
+      snapshot.foreach {
+        case (price, xs) =>
+          r ++= Longs.toByteArray(price)
+          r ++= Ints.toByteArray(xs.size)
+          xs.foreach(x => r ++= loToBytes(x))
+      }
+      r.result()
+    }
+
+    def fromBytes(bb: ByteBuffer): SideSnapshot = {
+      val snapshotSize = bb.getInt
+      val r            = Map.newBuilder[Price, Seq[LimitOrder]]
+      (1 to snapshotSize).foreach { _ =>
+        val price       = bb.getLong
+        val levelSize   = bb.getInt
+        val limitOrders = (1 to levelSize).map(_ => loFromBytes(bb))
+        r += price -> limitOrders
+      }
+      r.result()
+    }
+
+    def loToBytes(lo: LimitOrder): Array[Byte] = {
+      val r = new mutable.ArrayBuilder.ofByte
+      val orderType = lo match {
+        case _: SellLimitOrder => OrderType.SELL
+        case _: BuyLimitOrder  => OrderType.BUY
+      }
+      r ++= orderType.bytes
+      r ++= Longs.toByteArray(lo.amount)
+      r ++= Longs.toByteArray(lo.fee)
+      r += lo.order.version
+      val orderBytes = lo.order.bytes()
+      r ++= Ints.toByteArray(orderBytes.length)
+      r ++= orderBytes
+      r.result()
+    }
+
+    def loFromBytes(bb: ByteBuffer): LimitOrder =
+      OrderType(bb.get) match {
+        case OrderType.SELL => SellLimitOrder(bb.getLong, bb.getLong, Order.fromBytes(bb.get, bb.getBytes))
+        case OrderType.BUY  => BuyLimitOrder(bb.getLong, bb.getLong, Order.fromBytes(bb.get, bb.getBytes))
+      }
+  }
 
   case class Snapshot(bids: SideSnapshot, asks: SideSnapshot)
   object Snapshot {
-    def toByteArray(x: Snapshot): Array[Byte]    = ???
-    def fromByteArray(xs: Array[Byte]): Snapshot = ???
+    def toBytes(x: Snapshot): Array[Byte] = {
+      val asks = SideSnapshot.toBytes(x.asks)
+      val bids = SideSnapshot.toBytes(x.bids)
+      bids ++ asks
+    }
+
+    def fromBytes(xs: Array[Byte]): Snapshot = {
+      val bb = ByteBuffer.wrap(xs)
+      Snapshot(SideSnapshot.fromBytes(bb), SideSnapshot.fromBytes(bb))
+    }
   }
 
   case class AggregatedSnapshot(bids: Seq[LevelAgg] = Seq.empty, asks: Seq[LevelAgg] = Seq.empty)

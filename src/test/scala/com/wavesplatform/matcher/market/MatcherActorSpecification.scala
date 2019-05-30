@@ -383,7 +383,8 @@ class MatcherActorSpecification
         apdb,
         doNothingOnRecovery,
         ob,
-        (assetPair, matcher) => OrderBookActor.props(matcher, addressActor, assetPair, _ => {}, _ => {}, matcherSettings, txFactory, ntpTime),
+        (assetPair, matcher) =>
+          OrderBookActor.props(matcher, addressActor, ActorRef.noSender, assetPair, _ => {}, _ => {}, matcherSettings, txFactory, ntpTime), // TODO
         blockchain.assetDescription
       )
     )

@@ -2,6 +2,7 @@ package com.wavesplatform.matcher.market
 
 import java.util.concurrent.ConcurrentHashMap
 
+import akka.actor.ActorRef
 import akka.persistence.serialization.Snapshot
 import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import com.wavesplatform.NTPTime
@@ -51,6 +52,7 @@ class OrderBookActorSpecification extends MatcherSpec("OrderBookActor") with NTP
       new OrderBookActor(
         tp.ref,
         tp.ref,
+        ActorRef.noSender, // TODO
         pair,
         update(pair),
         p => Option(md.get(p)),
