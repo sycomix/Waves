@@ -44,7 +44,7 @@ class OrderBookActor(owner: ActorRef,
 
   private var lastTrade = Option.empty[LastTrade]
 
-  override val receive: Receive = recovering
+  override def receive: Receive = recovering
 
   private def recovering: Receive = {
     case OrderBookSnapshotStoreActor.Response.GetSnapshot(result) =>
@@ -66,8 +66,7 @@ class OrderBookActor(owner: ActorRef,
       context.become(working)
       unstashAll()
 
-    case msg @ ForceStartOrderBook(p) if p == assetPair =>
-      stash(sender(), msg)
+    case x => stash(x)
   }
 
   private def working: Receive = {

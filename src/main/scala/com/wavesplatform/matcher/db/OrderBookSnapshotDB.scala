@@ -1,5 +1,7 @@
 package com.wavesplatform.matcher.db
 
+import java.util.concurrent.ConcurrentHashMap
+
 import cats.instances.option.catsStdInstancesForOption
 import cats.syntax.apply.catsSyntaxTuple2Semigroupal
 import com.wavesplatform.database.{DBExt, Key}
@@ -36,5 +38,16 @@ object OrderBookSnapshotDB {
 
     private def keys(assetPair: AssetPair): (Key[Option[Offset]], Key[Option[Snapshot]]) =
       (MatcherKeys.orderBookSnapshotOffset(assetPair), MatcherKeys.orderBookSnapshot(assetPair))
+  }
+
+  def inMem: OrderBookSnapshotDB = new OrderBookSnapshotDB {
+    private val snapshots = new ConcurrentHashMap[AssetPair, (Offset, Snapshot)]()
+
+    override def get(assetPair: AssetPair): Option[(Offset, Snapshot)] = Option(snapshots.get(assetPair))
+
+    override def update(assetPair: AssetPair, offset: Offset, newSnapshot: Option[Snapshot]): Unit =
+      snapshots.compute(assetPair, (_, current) => (offset, newSnapshot.getOrElse(current._2)))
+
+    override def delete(assetPair: AssetPair): Unit = snapshots.remove(assetPair)
   }
 }

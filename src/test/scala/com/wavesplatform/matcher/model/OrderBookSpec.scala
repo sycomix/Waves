@@ -161,7 +161,7 @@ class OrderBookSpec extends FreeSpec with PropertyChecks with Matchers with Matc
     SideSnapshot.loFromBytes(bb) shouldBe x
   }
 
-  "SideSnapshot serialization" in forAll(sideSnapshotSerG) { x =>
+  "SideSnapshot serialization" in forAll(sideSnapshotSerGen) { x =>
     val bytes = SideSnapshot.toBytes(x)
     val bb    = ByteBuffer.wrap(bytes)
     SideSnapshot.fromBytes(bb) shouldBe x
@@ -197,5 +197,5 @@ class OrderBookSpec extends FreeSpec with PropertyChecks with Matchers with Matc
     bids <- bidsGen
   } yield Snapshot(bids, asks)
 
-  private val sideSnapshotSerG: Gen[SideSnapshot] = Gen.oneOf(asksGen, bidsGen)
+  private val sideSnapshotSerGen: Gen[SideSnapshot] = Gen.oneOf(asksGen, bidsGen)
 }

@@ -34,7 +34,6 @@ class MatcherActor(settings: MatcherSettings,
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   private var tradedPairs: Map[AssetPair, MarketData] = Map.empty
-  private var childrenNames: Map[ActorRef, AssetPair] = Map.empty
   private var lastProcessedNr: Long                   = -1L
 
   private var snapshotsState = SnapshotsState.empty
@@ -79,7 +78,6 @@ class MatcherActor(settings: MatcherSettings,
   private def createOrderBook(pair: AssetPair): ActorRef = {
     log.info(s"Creating order book for $pair")
     val orderBook = context.watch(context.actorOf(orderBookActorProps(pair, self), OrderBookActor.name(pair)))
-    childrenNames += orderBook -> pair
     orderBooks.updateAndGet(_ + (pair -> Right(orderBook)))
     tradedPairs += pair -> createMarketData(pair)
     orderBook
@@ -160,7 +158,10 @@ class MatcherActor(settings: MatcherSettings,
     case Terminated(ref) =>
       log.error(s"$ref is terminated")
       orderBooks.getAndUpdate { m =>
-        childrenNames.get(ref).fold(m)(m.updated(_, Left(())))
+        val name = ref.path.name
+        val xs   = name.split("-")
+        if (xs.size == 2) AssetPair.createAssetPair(xs.head, xs(1)).toOption.fold(m)(pair => m.updated(pair, Left(())))
+        else m
       }
 
     case OrderBookRecovered(assetPair, eventNr) =>
@@ -200,7 +201,7 @@ class MatcherActor(settings: MatcherSettings,
       context.stop(self)
       recoveryCompletedWithEventNr(Left("Received Shutdown command"))
 
-    case x => stash(sender(), x)
+    case x => stash(x)
   }
 
   private def becomeWorking(oldestSnapshotOffset: Option[EventOffset],
