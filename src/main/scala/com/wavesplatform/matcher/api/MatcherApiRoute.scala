@@ -99,10 +99,10 @@ case class MatcherApiRoute(assetPairBuilder: AssetPairBuilder,
         assetPairBuilder
           .validateAssetPair(p.reverse)
           .fold(
-            _ => complete(StatusCodes.NotFound -> Json.obj("message" -> e)),
+            _ => complete(StatusCodes.NotFound -> Json.obj("status" -> "NotFound", "message" -> e)),
             _ => redirect(s"/matcher/orderbook/${p.priceAssetStr}/${p.amountAssetStr}$suffix", StatusCodes.MovedPermanently)
           )
-      case Left(e) => complete(StatusCodes.NotFound -> Json.obj("message" -> e))
+      case Left(e) => complete(StatusCodes.NotFound -> Json.obj("status" -> "NotFound", "message" -> e))
     }
 
   private def withCancelRequest(f: CancelOrderRequest => Route): Route =
@@ -204,11 +204,13 @@ case class MatcherApiRoute(assetPairBuilder: AssetPairBuilder,
     ))
   def place: Route = path("orderbook") {
     (pathEndOrSingleSlash & post & jsonEntity[Order]) { order =>
-      unavailableOrderBookBarrier(order.assetPair) {
-        complete(placeTimer.measureFuture(orderValidator(order) match {
-          case Right(_)    => placeTimer.measureFuture(askAddressActor[MatcherResponse](order.sender, AddressActor.PlaceOrder(order)))
-          case Left(error) => Future.successful[MatcherResponse](OrderRejected(error))
-        }))
+      withAssetPair(order.assetPair) { pair =>
+        unavailableOrderBookBarrier(pair) {
+          complete(placeTimer.measureFuture(orderValidator(order) match {
+            case Right(_)    => placeTimer.measureFuture(askAddressActor[MatcherResponse](order.sender, AddressActor.PlaceOrder(order)))
+            case Left(error) => Future.successful[MatcherResponse](OrderRejected(error))
+          }))
+        }
       }
     }
   }
@@ -268,8 +270,8 @@ case class MatcherApiRoute(assetPairBuilder: AssetPairBuilder,
       )
     ))
   def cancel: Route = (path("orderbook" / AssetPairPM / "cancel") & post) { p =>
-    unavailableOrderBookBarrier(p) {
-      withAssetPair(p) { pair =>
+    withAssetPair(p) { pair =>
+      unavailableOrderBookBarrier(pair) {
         handleCancelRequest(Some(pair))
       }
     }
